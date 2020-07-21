@@ -75,8 +75,6 @@ class Tracer:
             try:
                 if i == 0:
                     yield self.reg('rip')
-                    # self.on_step()
-                    # f.write(', '.join(hex(t.reg(reg)) for reg in reg_names) + '\n')
 
                 self.single_step()
 
@@ -92,7 +90,6 @@ class Tracer:
         rip = self.reg('rip')
         code = self.mem(rip, 16)
         insn = next(md.disasm(code, rip))
-        # b = ' '.join('{:02x}'.format(x) for x in insn.bytes)
         print("{:010x}     {} {}".format(insn.address, insn.mnemonic, insn.op_str))
 
 
