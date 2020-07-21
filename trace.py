@@ -69,7 +69,7 @@ class Tracer:
         self.process.dumpRegs(cb)
 
 
-    def step_through(self, interval = 1):
+    def each_instruction(self, interval = 1):
         i = 0
         while True:
             try:
@@ -85,12 +85,29 @@ class Tracer:
             except ptrace.debugger.ProcessExit:
                 break;
 
+    def each_syscall(self):
+        while True:
+            try:
+                yield self.reg('rip')
+                self.syscall()
+            except ptrace.debugger.ProcessExit:
+                break;
+
+
+
+
+    def decompile(self, rip):
+        try:
+            md = Cs(CS_ARCH_X86, CS_MODE_64)
+            code = self.mem(rip, 16)
+            return next(md.disasm(code, rip))
+        except:
+            return None
+
     def dump_instruction(self):
-        md = Cs(CS_ARCH_X86, CS_MODE_64)
-        rip = self.reg('rip')
-        code = self.mem(rip, 16)
-        insn = next(md.disasm(code, rip))
-        print("{:010x}     {} {}".format(insn.address, insn.mnemonic, insn.op_str))
+        insn = self.decompile(self.reg('rip'))
+        if insn is not None:
+            print("{:010x}     {} {}".format(insn.address, insn.mnemonic, insn.op_str))
 
 
 # just all the registers
@@ -101,14 +118,24 @@ reg_names = [
     'r9', 'r8', 'eflags'
 ]
 
-def main():
-    t = Tracer(sys.argv[1:])
 
-    with open("trace.csv", 'w') as f:
+def trace_to_csv(argv, dst, interval=1):
+
+    with open(dst, 'w') as f:
+        # write the CSV header
         f.write(', '.join(reg_names) + '\n')
-        for rip in t.step_through(interval=1):
-            # t.dump_instruction()
-            f.write(', '.join(f'{t.reg(reg):016x}' for reg in reg_names) + '\n')
+
+        tracer = Tracer(argv)
+        for rip in tracer.each_instruction(interval):
+            # tracer.dump_instruction()
+            # insn = tracer.decompile(tracer.reg('rip'))
+            # if insn is not None and insn.mnemonic == 'syscall':
+                # tracer.dump_instruction()
+            f.write(', '.join(f'0x{tracer.reg(reg):x}' for reg in reg_names) + '\n')
+
+
+def main():
+    trace_to_csv(sys.argv[1:], "trace.csv", interval=1)
 
 
 
