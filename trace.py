@@ -123,15 +123,19 @@ def trace_to_csv(argv, dst, interval=1):
 
     with open(dst, 'w') as f:
         # write the CSV header
+        f.write('ind, ')
         f.write(', '.join(reg_names) + '\n')
 
         tracer = Tracer(argv)
+        i = 0
         for rip in tracer.each_instruction(interval):
             # tracer.dump_instruction()
             # insn = tracer.decompile(tracer.reg('rip'))
             # if insn is not None and insn.mnemonic == 'syscall':
                 # tracer.dump_instruction()
-            f.write(', '.join(f'0x{tracer.reg(reg):x}' for reg in reg_names) + '\n')
+            f.write(str(i) + ', ')
+            f.write(', '.join(f'{tracer.reg(reg)}' for reg in reg_names) + '\n')
+            i += 1
 
 
 def main():
